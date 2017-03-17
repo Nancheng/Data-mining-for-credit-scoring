@@ -1,0 +1,429 @@
+
+logInfoFile <<- "~/Desktop/lending_club/data/paipaidai/PPD_First_Round_Data_Update/Training_Set/PPD_LogInfo_3_1_Training_Set.csv"
+MasterFile <<-  "~/Desktop/lending_club/data/paipaidai/PPD_First_Round_Data_Update/Training_Set/PPD_Training_Master_GBK_3_1_Training_Set.csv"
+UpdateFile <<-  "~/Desktop/lending_club/data/paipaidai/PPD_First_Round_Data_Update/Training_Set/PPD_Userupdate_Info_3_1_Training_Set.csv"
+  
+Master_feature <- function(master_file_adress){
+  
+  #Master_dataFrame <- read.csv(master_file_adress,header=T,dec=".",sep=",",encoding="utf-8")#读文件
+  Master_dataFrame <- Training_Set
+  ClientIdx <- Master_dataFrame$Idx#客户名字
+  variableList <- colnames(Master_dataFrame)#变量列表
+  target_Output <- Master_dataFrame$target#客户是否违约
+  
+  #userinfoPart####
+  UserInfoVariable <- variableList[c(2:5,24:43)]
+  TotalUserInfor <- Master_dataFrame[UserInfoVariable]
+  list_UserInfoNumericPart <- paste(rep("UserInfo_",9), c(1,3,5,6,10,14:18) ,sep = "")
+  UserInfoNumericPart <- Master_dataFrame[c(list_UserInfoNumericPart,"target")]
+  
+  #webloginPart####
+  WeblogInfoVariable <- variableList[c(6:23,52:90)]
+  TotalWeblogin <- Master_dataFrame[WeblogInfoVariable]
+  
+  list_WebloginPartUseful <- paste(rep("WeblogInfo_",17), c(2,4,5,6,7,15:21,24,27,30,36,39) ,sep = "")
+  list_WebloginPartUsefulNumeric <- paste(rep("WeblogInfo_",14), c(2,4,5,6,7,15:18,24,27,30,36,39) ,sep = "")
+  list_WebloginPartUsefulcharacter <- paste(rep("WeblogInfo_",3), c(19,20,21) ,sep = "")
+  
+  WebloginUseful <- Master_dataFrame[list_WebloginPartUseful]
+  WebloginUsefulNumericPart <- Master_dataFrame[list_WebloginPartUsefulNumeric]
+  WebloginUsefulcharacterPart <- Master_dataFrame[list_WebloginPartUsefulcharacter]
+  WebloginUsefulNumericPart[is.na(WebloginUsefulNumericPart)]<- as.numeric(-1)  #将缺失值替换为-1
+  
+  #educationinPart####
+  EducationInfoVariable <- variableList[44:51]
+  #Totaleducation <- Master_dataFrame[EducationInfoVariable]
+  
+  #ThirdPartyPart####
+  ThirdPartyVariable <- variableList[91:209]
+  #TotalThirdParty <- Master_dataFrame[ThirdPartyVariable] 
+  list_ThirdPartyVariable <-c(paste(rep("ThirdParty_Info_Period1_",17), c(1:17) ,sep = ""),paste(rep("ThirdParty_Info_Period2_",17), c(1:17) ,sep = ""),paste(rep("ThirdParty_Info_Period3_",17), c(1:17) ,sep = ""),paste(rep("ThirdParty_Info_Period4_",17), c(1:17) ,sep = ""),paste(rep("ThirdParty_Info_Period5_",17), c(1:17) ,sep = ""),paste(rep("ThirdParty_Info_Period6_",17), c(1:17) ,sep = ""),paste(rep("ThirdParty_Info_Period7_",17), c(1:17) ,sep = "")) 
+  
+  
+  #SocialNetVariable####
+  SocialNetVariable <- variableList[210:226]
+  #SocialNetpart <- Master_dataFrame[SocialNetVariable]
+  
+  userinfolisttemp <- c("UserInfo_1","UserInfo_3","UserInfo_5","UserInfo_6","UserInfo_10","UserInfo_14","UserInfo_15","UserInfo_16","UserInfo_17","UserInfo_18","UserInfo_21")
+  webloginlisttemp <- c("WeblogInfo_2","WeblogInfo_4","WeblogInfo_5","WeblogInfo_6","WeblogInfo_7","WeblogInfo_14","WeblogInfo_15","WeblogInfo_16","WeblogInfo_17","WeblogInfo_18","WeblogInfo_24","WeblogInfo_30","WeblogInfo_39")
+  listtemp <- c("UserInfo_1","UserInfo_3","UserInfo_5","UserInfo_6","UserInfo_10","UserInfo_14","UserInfo_15","UserInfo_16","UserInfo_17","UserInfo_18","UserInfo_21","WeblogInfo_2","WeblogInfo_4","WeblogInfo_5","WeblogInfo_6","WeblogInfo_7","WeblogInfo_14","WeblogInfo_15","WeblogInfo_16","WeblogInfo_17","WeblogInfo_18","WeblogInfo_24","WeblogInfo_30","WeblogInfo_39","Education_Info1")
+  
+  DataNumericfromMaster <- data.frame(Master_dataFrame$Idx,Master_dataFrame[userinfolisttemp],Master_dataFrame[webloginlisttemp],Master_dataFrame["Education_Info1"],Master_dataFrame[ThirdPartyVariable],Master_dataFrame[SocialNetVariable])
+  
+  return(DataNumericfromMaster)
+}
+
+Loginfo_feature <- function(loginfo_file_adress){
+  
+  listIdxLogInfo <- LogInfoTraining_Set$Idx
+  
+  TableIdxLogInfo <- as.data.frame(table(listIdxLogInfo))
+  numberLogInfoList <- list()
+  for (i in (1: length(ClientIdx))){
+    if(ClientIdx[i] %in% TableIdxLogInfo$listIdxLogInfo){
+      n <- TableIdxLogInfo$Freq[which(TableIdxLogInfo$listIdxLogInfo == ClientIdx[i])]
+      numberLogInfoList <- c(numberLogInfoList,n)
+    }else{
+      numberLogInfoList <- c(numberLogInfoList,0)
+    }
+  }
+  
+  frequencyLogInfo1 <- list() #不同值的个数
+  for (i in (1: length(ClientIdx))){
+    if(ClientIdx[i] %in% TableIdxLogInfo$listIdxLogInfo){
+      loginfooneIndivudial <- LogInfoTraining_Set$LogInfo1[which(LogInfoTraining_Set$Idx == ClientIdx[i])]
+      Tableloginfo1Indivudial <- as.data.frame(table(loginfooneIndivudial))
+      existingnumber <- length(Tableloginfo1Indivudial$Freq)
+      frequencyLogInfo1 <- c(frequencyLogInfo1,existingnumber)
+    }else{
+      frequencyLogInfo1 <- c(frequencyLogInfo1,0)
+    }
+  }
+  
+  ModeLogInfo1 <- list() 
+  for (i in (1: length(ClientIdx))){
+    if(ClientIdx[i] %in% TableIdxLogInfo$listIdxLogInfo){
+      loginfooneIndivudial <- LogInfoTraining_Set$LogInfo1[which(LogInfoTraining_Set$Idx == ClientIdx[i])]
+      Tableloginfo1Indivudial <-  as.data.frame(table(loginfooneIndivudial))
+      largestvalue <- max(Tableloginfo1Indivudial$Freq)
+      indeex <- which(Tableloginfo1Indivudial$Freq==largestvalue)[1]
+      mostexisting <- as.numeric(as.character(Tableloginfo1Indivudial$loginfooneIndivudial))[indeex] 
+      ModeLogInfo1 <- c(ModeLogInfo1,mostexisting)
+    }else{
+      ModeLogInfo1 <- c(ModeLogInfo1,0)
+    }
+  }
+  
+  frequencyLogInfo2 <- list() #不同值的个数
+  for (i in (1: length(ClientIdx))){
+    if(ClientIdx[i] %in% TableIdxLogInfo$listIdxLogInfo){
+      loginfotwoIndivudial <- LogInfoTraining_Set$LogInfo2[which(LogInfoTraining_Set$Idx == ClientIdx[i])]
+      TableloginfotwoIndivudial <- as.data.frame(table(loginfotwoIndivudial))
+      existingnumber <- length(TableloginfotwoIndivudial$Freq)
+      frequencyLogInfo2 <- c(frequencyLogInfo2,existingnumber)
+    }else{
+      frequencyLogInfo2 <- c(frequencyLogInfo2,0)
+    }
+  }
+  
+  
+  ModeLogInfo2 <- list()      #出现次数最多的值
+  for (i in (1: length(ClientIdx))){
+    if(ClientIdx[i] %in% TableIdxLogInfo$listIdxLogInfo){
+      loginfotwoIndivudial <- LogInfoTraining_Set$LogInfo2[which(LogInfoTraining_Set$Idx == ClientIdx[i])]
+      TableloginfotwoIndivudial <- as.data.frame(table(loginfotwoIndivudial))
+      largestvalue <- max(TableloginfotwoIndivudial$Freq)
+      indeex <- which(TableloginfotwoIndivudial$Freq==largestvalue)[1]
+      mostexisting <- as.numeric(as.character(TableloginfotwoIndivudial$loginfotwoIndivudial))[indeex]
+      ModeLogInfo2 <- c(ModeLogInfo2,mostexisting)
+    }else{
+      ModeLogInfo2 <- c(ModeLogInfo2,0)
+    }
+  }
+  
+  DateRange <- list()
+  for (i in (1: length(ClientIdx))){
+    if(ClientIdx[i] %in% TableIdxLogInfo$listIdxLogInfo){
+      DateEarlier <- min(as.Date(LogInfoTraining_Set$LogInfo3[which(LogInfoTraining_Set$Idx == ClientIdx[i])]))
+      DateLater <- max(as.Date(LogInfoTraining_Set$LogInfo3[which(LogInfoTraining_Set$Idx == ClientIdx[i])]))
+      RangeDate <- DateLater-DateEarlier
+      DateRange <- c(DateRange,RangeDate)
+    }else{
+      DateRange <- c(DateRange,0)
+    }
+  }
+  
+  
+  Datevarynumber <- list()
+  for (i in (1: length(ClientIdx))){
+    if(ClientIdx[i] %in% TableIdxLogInfo$listIdxLogInfo){
+      datevaryIndivudial <- as.Date(LogInfoTraining_Set$LogInfo3[which(LogInfoTraining_Set$Idx == ClientIdx[i])])
+      Tableloginfo3Indivudial <- as.data.frame(table(datevaryIndivudial))
+      Datenumber <- length(Tableloginfo3Indivudial$Freq)
+      Datevarynumber <- c(Datevarynumber,Datenumber)
+    }else{
+      Datevarynumber <- c(Datevarynumber,0)
+    }
+  }
+  
+  
+  MostappearDate <- list()
+  for (i in (1: length(ClientIdx))){
+    if(ClientIdx[i] %in% TableIdxLogInfo$listIdxLogInfo){
+      datevaryIndivudial <- as.Date(LogInfoTraining_Set$LogInfo3[which(LogInfoTraining_Set$Idx == ClientIdx[i])])
+      Tableloginfo3Indivudial <- as.data.frame(table(datevaryIndivudial))
+      largestvalue <- max(Tableloginfo3Indivudial$Freq)
+      indeex <- which(Tableloginfo3Indivudial$Freq==largestvalue)[1]
+      mostexistingDate <- as.Date(Tableloginfo3Indivudial$datevaryIndivudial[indeex])
+      lastday <- as.Date(LogInfoTraining_Set$Listinginfo1[which(LogInfoTraining_Set$Idx == ClientIdx[i])])[1]
+      dategap <- as.numeric(lastday - mostexistingDate)[1]
+      MostappearDate <- c(MostappearDate,dategap)
+    }else{
+      MostappearDate <- c(MostappearDate,0)
+    }
+  }
+  
+  
+  DataCleanLogInfo <- matrix(NA, length(ClientIdx),10)
+  
+  DataCleanLogInfo[,1] <- ClientIdx
+  DataCleanLogInfo[,2] <- as.numeric(numberLogInfoList)
+  DataCleanLogInfo[,3] <- as.numeric(ModeLogInfo1)
+  DataCleanLogInfo[,4] <- as.numeric(frequencyLogInfo1)
+  DataCleanLogInfo[,5] <- as.numeric(ModeLogInfo2)
+  DataCleanLogInfo[,6] <- as.numeric(frequencyLogInfo2)
+  DataCleanLogInfo[,7] <- as.numeric(DateRange)
+  DataCleanLogInfo[,8] <- as.numeric(Datevarynumber)
+  DataCleanLogInfo[,9] <- as.numeric(MostappearDate)
+  DataCleanLogInfo[,10] <- target_Output
+  
+  DataCleanLogInfoDataFrame <- as.data.frame(DataCleanLogInfo)
+  names(DataCleanLogInfoDataFrame) <-list('Idx','operationTimes',"ModeLogInfo1","frequencyLogInfo1","ModeLogInfo2","frequencyLogInfo2","RangeDay","Datevarynumber","MostappearDate","target")
+  rownames(DataCleanLogInfoDataFrame) <-as.list(DataCleanLogInfoDataFrame$Idx)
+  
+  
+  return(DataCleanLogInfoDataFrame)
+}
+
+UpdateInfo_feature <- function(loginfo_file_adress){
+  
+  updatelist <- UserupdateTraining_Set$UserupdateInfo1
+  
+  Tableupdatelist <- as.data.frame(table(updatelist))
+  
+  
+  
+  #id number
+  numberupdateInfoList <- list()
+  listIdxupdateInfo <- UserupdateTraining_Set$Idx
+  
+  TableIdxupdate <- as.data.frame(table(listIdxupdateInfo))
+  numberupdateInfoList <- list()
+  for (i in (1: length(ClientIdx))){
+    if(ClientIdx[i] %in% TableIdxupdate$listIdxupdateInfo){
+      n <- TableIdxupdate$Freq[which(TableIdxupdate$listIdxupdateInfo == ClientIdx[i])]
+      numberupdateInfoList <- c(numberupdateInfoList,n)
+    }else{
+      numberupdateInfoList <- c(numberupdateInfoList,0)
+    }
+  }
+  
+  updateDateRange <- list()
+  for (i in (1: length(ClientIdx))){
+    if(ClientIdx[i] %in% TableIdxupdate$listIdxupdateInfo){
+      DateEarlier <- min(as.Date(UserupdateTraining_Set$UserupdateInfo2[which(UserupdateTraining_Set$Idx == ClientIdx[i])]))
+      DateLater <- max(as.Date(UserupdateTraining_Set$UserupdateInfo2[which(UserupdateTraining_Set$Idx == ClientIdx[i])]))
+      RangeDate <- DateLater-DateEarlier
+      updateDateRange <- c(updateDateRange,RangeDate)
+    }else{
+      updateDateRange <- c(updateDateRange,0)
+    }
+  }
+  
+  
+  updateDatevarynumber <- list()
+  for (i in (1: length(ClientIdx))){
+    if(ClientIdx[i] %in% TableIdxupdate$listIdxupdateInfo){
+      updatedatevaryIndivudial <- as.Date(UserupdateTraining_Set$UserupdateInfo2[which(UserupdateTraining_Set$Idx == ClientIdx[i])])
+      Tableupdateinfo2Indivudial <- as.data.frame(table(updatedatevaryIndivudial))
+      updateDatenumber <- length(Tableupdateinfo2Indivudial$Freq)
+      updateDatevarynumber <- c(updateDatevarynumber,Datenumber)
+    }else{
+      updateDatevarynumber <- c(updateDatevarynumber,0)
+    }
+  }
+  
+  
+  updateMostappearDate <- list()
+  for (i in (1: length(ClientIdx))){
+    if(ClientIdx[i] %in% TableIdxupdate$listIdxupdateInfo){
+      updatedatevaryIndivudial <- as.Date(UserupdateTraining_Set$UserupdateInfo2[which(UserupdateTraining_Set$Idx == ClientIdx[i])])
+      Tableupdateinfo2Indivudial <- as.data.frame(table(updatedatevaryIndivudial))
+      largestvalue <- max(Tableupdateinfo2Indivudial$Freq)
+      indeex <- which(Tableupdateinfo2Indivudial$Freq==largestvalue)[1]
+      mostexistingDate <- as.Date(Tableupdateinfo2Indivudial$updatedatevaryIndivudial[indeex])
+      lastday <- as.Date(UserupdateTraining_Set$ListingInfo1[which(UserupdateTraining_Set$Idx == ClientIdx[i])])[1]
+      dategap <- as.numeric(lastday - mostexistingDate)[1]
+      updateMostappearDate <- c(updateMostappearDate,dategap)
+    }else{
+      updateMostappearDate <- c(updateMostappearDate,0)
+    }
+  }
+  
+  
+  
+  VariableAboutBusiness <- c("_BussinessAddress","_CompanyAddress","_CompanyAddress","_CompanyName","_CompanyPhone","_companyAddress","_companyName","_companyPhone","_Department")
+  VariableAboutResidence <- c("_DormitoryPhone","_ResidenceAddress","_ResidencePhone","_ResidenceTypeId","_ResidenceYears","_dormitoryPhone","_residenceAddress","_residencePhone","_residenceTypeId","_residenceYears")
+  VariableAboutPrivacy <- c("_Gender","_IdAddress","_IdNumber","_IncomeFrom","_MobilePhone","_MarriageStatusId","_Phone","_QQ","_RealName","_age","_gender","_idNumber","_marriageStatusId","_mobilePhone","_phone","_qQ","_realName","","","","","")
+  VariableAboutcar <- c("_hasBuyCar","_HasBuyCar")
+  
+  NumberAboutBusiness <- list()
+  NumberAboutPrivacy <- list()
+  NumberAboutResidece <- list()
+  NumberAboutCar <- list()
+  
+  for (i in (1: length(ClientIdx))){
+    if(ClientIdx[i] %in% TableIdxupdate$listIdxupdateInfo){
+      
+      indivudiallistUserupdateinfo1 <- as.character(UserupdateTraining_Set$UserupdateInfo1[which(UserupdateTraining_Set$Idx == ClientIdx[i])])
+      
+      nAboutBusiness <- length(subset(indivudiallistUserupdateinfo1,indivudiallistUserupdateinfo1%in%VariableAboutBusiness))
+      nAboutResidece <- length(subset(indivudiallistUserupdateinfo1,indivudiallistUserupdateinfo1%in%VariableAboutResidence))
+      nAboutPrivacy <- length(subset(indivudiallistUserupdateinfo1,indivudiallistUserupdateinfo1%in%VariableAboutPrivacy))
+      nAboutCar <- length(subset(indivudiallistUserupdateinfo1,indivudiallistUserupdateinfo1%in%VariableAboutcar))
+      
+      NumberAboutBusiness <- c(NumberAboutBusiness,nAboutBusiness)
+      NumberAboutResidece <- c(NumberAboutResidece,nAboutResidece)
+      NumberAboutPrivacy <- c(NumberAboutPrivacy,nAboutPrivacy)    
+      NumberAboutCar <- c(NumberAboutCar,nAboutCar)
+      
+      print(nAboutBusiness)
+      
+    }else{
+      NumberAboutBusiness <- c(NumberAboutBusiness,0)
+      NumberAboutResidece <- c(NumberAboutResidece,0)
+      NumberAboutPrivacy <- c(NumberAboutPrivacy,0)    
+      NumberAboutCar <- c(NumberAboutCar,0)
+    }
+  }
+  
+  DataCleanupdateInfo <- matrix(NA, length(ClientIdx),10)
+  
+  DataCleanupdateInfo[,1] <- ClientIdx
+  DataCleanupdateInfo[,2] <- as.numeric(numberupdateInfoList)
+  DataCleanupdateInfo[,3] <- as.numeric(updateDateRange)
+  DataCleanupdateInfo[,4] <- as.numeric(updateDatevarynumber)
+  DataCleanupdateInfo[,5] <- as.numeric(updateMostappearDate)
+  DataCleanupdateInfo[,6] <- as.numeric(NumberAboutBusiness)
+  DataCleanupdateInfo[,7] <- as.numeric(NumberAboutResidece)
+  DataCleanupdateInfo[,8] <- as.numeric(NumberAboutPrivacy)
+  DataCleanupdateInfo[,9] <- as.numeric(NumberAboutCar)
+  DataCleanupdateInfo[,10] <- target_Output
+  
+  DataCleanupdateInfoFrame <- as.data.frame(DataCleanupdateInfo)
+  names(DataCleanupdateInfoFrame) <-list('Idx','updateTimes','updateDateRange',"updateDatevarynumber","updateMostappearDate","nAboutBusiness","nAboutResidece","NumberAboutPrivacy","NumberAboutCar","target")
+  rownames(DataCleanupdateInfoFrame) <-as.list(DataCleanupdateInfoFrame$Idx)
+  
+  
+  return(DataCleanupdateInfoFrame)
+}
+
+Combine_three_dataframes <- function(DataNumericfromMaster,DataCleanLogInfoDataFrame,DataCleanupdateInfoFrame) {
+  
+  Total_data <- data.frame(DataCleanLogInfoDataFrame[-10],DataNumericfromMaster[-1],DataCleanupdateInfoFrame[-1])
+  
+  return(Total_data)
+  
+}
+
+Dividing_by_target_0 <- function(total_data){
+  Training_0 <- subset(total_data,target == 0)
+ 
+  return(Training_0)
+}
+
+Dividing_by_target_1 <- function(total_data){
+  Training_1 <- subset(total_data,target == 1)
+  
+  return(Training_1)
+}
+
+subset_training_data <- function(training_target_1,tarining_target_0){
+  
+  n_0 <- runif(500,min=0,max=nrow(total_data_target_0)) 
+  n_1 <- runif(500,min=0,max=nrow(total_data_target_1)) 
+  
+  subset_training_0 <- tarining_target_0[n_0,]
+  subset_training_1 <- training_target_1[n_1,]
+  
+  data_training_subset <- rbind(subset_training_0,subset_training_1)
+  data_training_subset[is.na(data_training_subset)] <- -1
+  library(caret)
+  zerovar <- nearZeroVar(data_training_subset)
+  TotalDataNumericIndependentWithoutconstant <- data_training_subset[-zerovar]
+  descrCorr <- cor(TotalDataNumericIndependentWithoutconstant)
+  highCorr <- findCorrelation(descrCorr, 0.90)
+  data_training_subset <- data.frame(TotalDataNumericIndependentWithoutconstant)[, -highCorr]
+  data_training_subset[is.na(data_training_subset)] <- -1
+  data_training_subset$target <- factor(data_training_subset$target)
+  return(data_training_subset)
+}
+
+
+feature_test_adaboost <- function(total_indiv){
+  library(caret)
+  library(fastAdaboost)
+  ModelFit_fastAdaboost <- train(target~.,data=total_indiv,method="adaboost")
+}
+
+
+training_part_dataframe <- Master_feature(MasterFile)
+loginfo_part_dataframe <- Loginfo_feature(logInfoFile)
+update_part_dataframe <- UpdateInfo_feature(UpdateFile)
+total_data_training <- Combine_three_dataframes(training_part_dataframe,loginfo_part_dataframe,update_part_dataframe)
+
+total_data_target_1 <- Dividing_by_target_1(total_data_training)
+total_data_target_0 <- Dividing_by_target_0(total_data_training)
+
+subset_training_indi_1 <- subset_training_data(total_data_target_1,total_data_target_0)
+subset_training_indi_1[is.na(subset_training_indi_1)] <- -1
+subset_training_indi_1$target <- factor(subset_training_indi_1$target)
+ModelFit_fastAdaboost <- train(target~.,data=subset_training_indi_1,method="adaboost")
+
+library(mlbench)
+library(rpart)
+library(adabag)
+model_boosting <- boosting(target~.,data=subset_training_indi_1[,-1])
+
+feature_list <- model_boosting$importance
+importanceplot(model_boosting)
+
+model_bagging <- bagging(target~.,data=subset_training_indi_1[,-1])
+feature_list_bagging <- model_bagging$importance
+importanceplot(model_bagging)
+
+model_logicRegression <- glm(target ~.,family=binomial(link='logit'),data=subset_training_indi_1[,-1],control=list(maxit=200))
+feature_list_logicRegression <- model_logicRegression$importance
+importanceplot(model_logicRegression)
+
+
+library(e1071)
+f <- as.formula(paste("target ~", paste(n[!n %in% "target"], collapse = " + ")))
+model_navieBayes <- naiveBayes(f,data=subset_training_indi_1[,-1] )
+
+library(rpart)
+library(randomForest)
+model_forest<-randomForest(target~.,data=subset_training_indi_1[,-1])
+
+
+
+
+library(xgboost)
+library(readr)
+library(stringr)
+library(caret)
+library(car)
+
+xgb <- xgboost(data = subset_training_indi_1[,-1], 
+               label = subset_training_indi_1$target, 
+               eta = 0.1,
+               max_depth = 15, 
+               nround=25, 
+               subsample = 0.5,
+               colsample_bytree = 0.5,
+               seed = 1,
+               eval_metric = "merror",
+               objective = "multi:softprob",
+               num_class = 12,
+               nthread = 3
+)
+
+
+#write.csv(training_part_dataframe, file = "~/Desktop/training_part_dataframe.csv",row.names=FALSE, na="")
+#write.csv(loginfo_part_dataframe, file = "~/Desktop/loginfo_part_dataframe.csv",row.names=FALSE, na="")
+#write.csv(update_part_dataframe, file = "~/Desktop/update_part_dataframe.csv",row.names=FALSE, na="")
+#write.csv(total_data_training, file = "~/Desktop/totalTraining.csv",row.names=FALSE, na="")
+#write.csv(total_data_target_1, file = "~/Desktop/total_data_target_1.csv",row.names=FALSE, na="")
+#write.csv(total_data_target_0, file = "~/Desktop/total_data_target_0.csv",row.names=FALSE, na="")
+#write.csv(subset_training_indi_1, file = "~/Desktop/subset_training_indi_1.csv",row.names=FALSE, na="")
+
